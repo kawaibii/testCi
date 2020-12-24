@@ -1,24 +1,50 @@
-workspace : true
-build-job:
+workspace: true
+
+stages:
+  - build
+  - test
+
+jobs:
+- name: build
   stage: build
+  image: sunasteriskrnd/php-workspace:7.4
+  services:
+    - image: mysql:5.7
+      name: mysql_test
+      environment:
+         MYSQL_DATABASE: mysql
+         MYSQL_USER: user_test
+         MYSQL_PASSWORD: password_test
+         MYSQL_ROOT_PASSWORD: root
+  environment:
+    APP_ENV: testing
+  cache:
+  - key: comopser_vendor_$CI_BRANCH
+    paths:
+      - vendor
+  before_script:
+  - cp .env.example .env.testing
+  - composer install
+  - php artisan key:generate
+  - php artisan migrate
+  - php artisan config:cache
+  - php artisan config:clear
+  - php artisan cache:clear
   script:
-    - echo "Hello, $GITLAB_USER_LOGIN!"
+  - composer install
+  after_script:
+  - echo "Finish job"
 
-test-job1:
+- name: test:node
   stage: test
+  image: node:12-alpine
   script:
-    - echo "This job tests something"
+  - yarn
 
-test-job2:
+- name: test:phpunit
   stage: test
+  image: sunasteriskrnd/php-workspace:7.4
+  before_script:
+  - composer install
   script:
-    - echo "This job tests something, but takes more time than test-job1."
-    - echo "After the echo commands complete, it runs the sleep command for 20 seconds"
-    - echo "which simulates a test that runs 20 seconds longer than test-job1"
-    - sleep 20
-
-deploy-prod:
-  stage: deploy
-  script:
-    - echo "This job deploys something from the $CI_COMMIT_BRANCH branch."
-    - php demo.php
+  - php vendor/bin/phpunit
