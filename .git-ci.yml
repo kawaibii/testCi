@@ -1,0 +1,9 @@
+built-job:
+stage : buil
+script: 
+  - echo "hello "
+
+deploy-prod:
+  stage : deploy
+  script :
+    - echo "123"
